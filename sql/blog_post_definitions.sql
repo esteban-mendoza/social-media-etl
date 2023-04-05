@@ -72,6 +72,7 @@ CREATE TABLE public.comments (
     name VARCHAR(255),
     email VARCHAR(255),
     body TEXT,
+    PRIMARY KEY (id),
     CONSTRAINT fk_post_id
         FOREIGN KEY (post_id)
         REFERENCES posts(id)
