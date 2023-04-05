@@ -23,6 +23,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 from operators.rest_api_json_to_gcs_operator import RestApiJsonToGCSOperator
 from utils.utils import flatten_dict
@@ -191,8 +192,21 @@ with DAG(
         gcs_destination_path="users.json",
     )
 
+    empty_table = PostgresOperator(
+        task_id="empty_table",
+        postgres_conn_id="postgres_social_media",
+        sql=f"DELETE FROM {users_table}",
+    )
+
     transform_and_load = PythonOperator(
         task_id="transform_and_load", python_callable=_transform_and_load
     )
 
-    start >> api_is_available >> ingest_users_to_gcs >> transform_and_load >> end
+    (
+        start
+        >> api_is_available
+        >> ingest_users_to_gcs
+        >> empty_table
+        >> transform_and_load
+        >> end
+    )
