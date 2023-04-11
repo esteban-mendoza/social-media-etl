@@ -139,7 +139,6 @@ with DAG(
     default_args=default_args,
     schedule_interval=None,
 ) as dag:
-
     start = dummy_operator.DummyOperator(task_id="start")
 
     end = dummy_operator.DummyOperator(task_id="end")

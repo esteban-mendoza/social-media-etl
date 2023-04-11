@@ -139,7 +139,6 @@ with DAG(
     default_args=default_args,
     schedule_interval=None,
 ) as dag:
-
     start = dummy_operator.DummyOperator(task_id="start")
 
     end = dummy_operator.DummyOperator(task_id="end")
@@ -157,7 +156,7 @@ with DAG(
         gcs_bucket=raw_bucket,
         gcs_destination_path="posts.json",
     )
-    
+
     empty_table = PostgresOperator(
         task_id="empty_table",
         postgres_conn_id="postgres_social_media",
