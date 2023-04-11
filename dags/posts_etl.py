@@ -178,8 +178,9 @@ with DAG(
     (
         start
         >> api_is_available
-        >> [ingest_posts_json_to_gcs, ingest_posts_ndjson_to_gcs]
+        >> ingest_posts_json_to_gcs
         >> empty_table
         >> transform_and_load
         >> end
     )
+    api_is_available >> ingest_posts_ndjson_to_gcs

@@ -220,9 +220,10 @@ with DAG(
     (
         start
         >> api_is_available
-        >> [ingest_users_json_to_gcs, ingest_users_ndjson_to_gcs]
+        >> ingest_users_json_to_gcs
         >> finished_upload_to_gcs
         >> empty_tables
         >> transform_and_load
         >> end
     )
+    api_is_available >> ingest_users_ndjson_to_gcs
