@@ -217,9 +217,7 @@ with DAG(
         start
         >> api_is_available
         >> ingest_users_to_gcs
-        >> empty_users_table
-        >> empty_addresses_table
-        >> empty_companies_table
+        >> [empty_users_table, empty_addresses_table, empty_companies_table]
         >> transform_and_load
         >> end
     )
