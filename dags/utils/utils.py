@@ -1,5 +1,4 @@
-
-def flatten_dict(d, parent_key='', sep='_'):
+def flatten_dict(d, parent_key="", sep="_"):
     """
     Recursively flattens all levels of a dictionary and concatenates all the keys.
 
