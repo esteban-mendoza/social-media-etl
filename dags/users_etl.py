@@ -193,19 +193,19 @@ with DAG(
     )
 
     empty_users_table = PostgresOperator(
-        task_id="empty_table",
+        task_id="empty_users_table",
         postgres_conn_id="postgres_social_media",
         sql=f"DELETE FROM {users_table}",
     )
 
     empty_addresses_table = PostgresOperator(
-        task_id="empty_table",
+        task_id="empty_addresses_table",
         postgres_conn_id="postgres_social_media",
         sql=f"DELETE FROM {addresses_table}",
     )
 
     empty_companies_table = PostgresOperator(
-        task_id="empty_table",
+        task_id="empty_companies_table",
         postgres_conn_id="postgres_social_media",
         sql=f"DELETE FROM {companies_table}",
     )
