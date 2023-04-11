@@ -184,11 +184,19 @@ with DAG(
         response_check=lambda response: response.status_code == 200,
     )
 
-    ingest_users_to_gcs = RestApiJsonToGCSOperator(
-        task_id="ingest_users_to_gcs",
+    ingest_users_json_to_gcs = RestApiJsonToGCSOperator(
+        task_id="ingest_users_json_to_gcs",
         rest_api_endpoint=users_endpoint,
         gcs_bucket=raw_bucket,
         gcs_destination_path="users.json",
+    )
+
+    ingest_users_ndjson_to_gcs = RestApiJsonToGCSOperator(
+        task_id="ingest_users_ndjson_to_gcs",
+        rest_api_endpoint=users_endpoint,
+        gcs_bucket=raw_bucket,
+        gcs_destination_path="users.ndjson",
+        save_as_ndjson=True,
     )
 
     empty_users_table = PostgresOperator(
@@ -216,7 +224,7 @@ with DAG(
     (
         start
         >> api_is_available
-        >> ingest_users_to_gcs
+        >> [ingest_users_json_to_gcs, ingest_users_ndjson_to_gcs]
         >> [empty_users_table, empty_addresses_table, empty_companies_table]
         >> transform_and_load
         >> end

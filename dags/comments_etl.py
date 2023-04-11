@@ -150,11 +150,19 @@ with DAG(
         response_check=lambda response: response.status_code == 200,
     )
 
-    ingest_comments_to_gcs = RestApiJsonToGCSOperator(
-        task_id="ingest_comments_to_gcs",
+    ingest_comments_json_to_gcs = RestApiJsonToGCSOperator(
+        task_id="ingest_comments_json_to_gcs",
         rest_api_endpoint=comments_endpoint,
         gcs_bucket=raw_bucket,
         gcs_destination_path="comments.json",
+    )
+
+    ingest_comments_ndjson_to_gcs = RestApiJsonToGCSOperator(
+        task_id="ingest_comments_ndjson_to_gcs",
+        rest_api_endpoint=comments_endpoint,
+        gcs_bucket=raw_bucket,
+        gcs_destination_path="comments.ndjson",
+        save_as_ndjson=True,
     )
 
     empty_table = PostgresOperator(
@@ -170,7 +178,7 @@ with DAG(
     (
         start
         >> api_is_available
-        >> ingest_comments_to_gcs
+        >> [ingest_comments_json_to_gcs, ingest_comments_ndjson_to_gcs]
         >> empty_table
         >> transform_and_load
         >> end

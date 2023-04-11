@@ -9,12 +9,16 @@ class RestApiJsonToGCSOperator(BaseOperator):
     Operator to download data from a REST API that returns JSON and store it in Google Cloud Storage.
     """
 
-    def __init__(self, 
-                 rest_api_endpoint: str,
-                 gcs_bucket: str,
-                 gcs_destination_path: str,
-                 gcp_conn_id: str = "google_cloud_default",
-                 *args, **kwargs):
+    def __init__(
+        self,
+        rest_api_endpoint: str,
+        gcs_bucket: str,
+        gcs_destination_path: str,
+        gcp_conn_id: str = "google_cloud_default",
+        save_as_ndjson: bool = False,
+        *args,
+        **kwargs,
+    ):
         """
         Initializes the operator.
 
@@ -26,12 +30,20 @@ class RestApiJsonToGCSOperator(BaseOperator):
         :type gcs_destination_path: str
         :param gcp_conn_id: The Airflow connection ID to use for Google Cloud Storage.
         :type gcp_conn_id: str
+        :param save_as_ndjson: Whether to save the data as newline-delimited JSON.
+        :type save_as_ndjson: bool
         """
         super().__init__(*args, **kwargs)
         self.rest_api_endpoint = rest_api_endpoint
+        self.save_as_ndjson = save_as_ndjson
         self.gcs_bucket = gcs_bucket
         self.gcs_destination_path = gcs_destination_path
         self.gcp_conn_id = gcp_conn_id
+
+        if self.save_as_ndjson:
+            self.mime_type = "application/x-ndjson"
+        else:
+            self.mime_type = "application/json"
 
     def execute(self, context):
         """
@@ -45,7 +57,11 @@ class RestApiJsonToGCSOperator(BaseOperator):
             raise
 
         try:
-            data = json.loads(response.text)
+            json_str = json.loads(response.text)
+            if self.save_as_ndjson:
+                data = "\n".join([json.dumps(d) for d in json_str])
+            else:
+                data = json.dumps(json_str)
         except ValueError as e:
             self.log.error(f"Error parsing JSON from {self.rest_api_endpoint}: {e}")
             raise
@@ -55,11 +71,15 @@ class RestApiJsonToGCSOperator(BaseOperator):
             gcs_hook.upload(
                 bucket_name=self.gcs_bucket,
                 object_name=self.gcs_destination_path,
-                data=json.dumps(data),
-                mime_type='application/json'
+                data=data,
+                mime_type=self.mime_type,
             )
         except Exception as e:
-            self.log.error(f"Error writing data to gs://{self.gcs_bucket}/{self.gcs_destination_path}: {e}")
+            self.log.error(
+                f"Error writing data to gs://{self.gcs_bucket}/{self.gcs_destination_path}: {e}"
+            )
             raise
 
-        self.log.info(f"Stored data from {self.rest_api_endpoint} to gs://{self.gcs_bucket}/{self.gcs_destination_path}")
+        self.log.info(
+            f"Stored data from {self.rest_api_endpoint} to gs://{self.gcs_bucket}/{self.gcs_destination_path}"
+        )
