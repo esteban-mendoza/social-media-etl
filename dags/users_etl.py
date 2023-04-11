@@ -177,6 +177,10 @@ with DAG(
 
     end = dummy_operator.DummyOperator(task_id="end")
 
+    finished_upload_to_gcs = dummy_operator.DummyOperator(
+        task_id="finished_upload_to_gcs"
+    )
+
     api_is_available = HttpSensor(
         task_id="api_is_available",
         http_conn_id="jsonplaceholder_users_api",
@@ -199,23 +203,15 @@ with DAG(
         save_as_ndjson=True,
     )
 
-    empty_users_table = PostgresOperator(
-        task_id="empty_users_table",
-        postgres_conn_id="postgres_social_media",
-        sql=f"DELETE FROM {users_table}",
-    )
-
-    empty_addresses_table = PostgresOperator(
-        task_id="empty_addresses_table",
-        postgres_conn_id="postgres_social_media",
-        sql=f"DELETE FROM {addresses_table}",
-    )
-
-    empty_companies_table = PostgresOperator(
-        task_id="empty_companies_table",
-        postgres_conn_id="postgres_social_media",
-        sql=f"DELETE FROM {companies_table}",
-    )
+    empty_tables = []
+    for table in [users_table, addresses_table, companies_table]:
+        empty_tables.append(
+            PostgresOperator(
+                task_id=f"empty_{table}_table",
+                postgres_conn_id="postgres_social_media",
+                sql=f"DELETE FROM {table}",
+            )
+        )
 
     transform_and_load = PythonOperator(
         task_id="transform_and_load", python_callable=_transform_and_load
@@ -225,7 +221,8 @@ with DAG(
         start
         >> api_is_available
         >> [ingest_users_json_to_gcs, ingest_users_ndjson_to_gcs]
-        >> [empty_users_table, empty_addresses_table, empty_companies_table]
+        >> finished_upload_to_gcs
+        >> empty_tables
         >> transform_and_load
         >> end
     )
